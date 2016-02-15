@@ -1,0 +1,11 @@
+
+<md-toolbar>
+  <h1 class="md-toolbar-tools">ApiWebClient</h1>
+</md-toolbar>
+<md-content layout="column" flex="flex">
+  <md-list>
+    <md-list-item ng-repeat="item in items">
+      <md-button ng-class="{'md-accent':isActive(item.link)}" ng-href="{{item.link}}" ng-click="close()">{{item.title}}</md-button>
+    </md-list-item>
+  </md-list>
+</md-content>

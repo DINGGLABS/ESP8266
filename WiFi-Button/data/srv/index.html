@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="ApiWebClient">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height">
+    <link href="//fonts.googleapis.com/css?family=Roboto:400,300,300italic,400italic,500,500italic,700,700italic" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/angular_material/0.10.1/angular-material.min.css">
+    <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="css/styles.css">
+    <title ng-bind-template="ApiWebClient{{$root.pageTitle ? ': ' + $root.pageTitle : ''}}">ApiWebClient</title>
+  </head>
+  <body layout="row" ng-controller="AppController">
+    <md-sidenav awc-side-nav fill-height md-component-id="left" md-is-locked-open="$mdMedia('gt-md')" class="md-sidenav-left md-whiteframe-z2"></md-sidenav>
+    <main layout="column" flex role="main">
+      <md-toolbar layout="row">
+        <div class="md-toolbar-tools">
+          <button hide-gt-md="" ng-click="toggleSidenav()" aria-label="Toggle Menu" class="awc-side-nav-btn">
+            <md-icon>menu</md-icon>
+          </button>
+          <div layout="row" flex class="fill-height">
+            <div class="md-toolbar-item md-breadcrumb">
+              <h1>{{$root.pageTitle}}</h1>
+            </div>
+          </div>
+        </div>
+      </md-toolbar>
+      <md-content flex ng-view class="md-padding"></md-content>
+    </main>
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.4/angular.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.4/angular-route.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.4/angular-resource.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.4/angular-animate.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.4/angular-aria.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/angular_material/0.10.1/angular-material.js"></script>
+    <script src="/js/app.js"></script>
+  </body>
+</html>

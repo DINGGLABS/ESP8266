@@ -1,0 +1,33 @@
+md-sidenav md-list .md-button {
+  width: 100%;
+  max-height: 40px;
+  overflow: hidden;
+  margin: 0;
+  padding: 0px 16px;
+  border-radius: 0;
+  line-height: 40px;
+  color: inherit;
+  font-size: 14px;
+  font-weight: normal;
+  text-align: left;
+  text-decoration: none;
+  text-transform: none;
+  white-space: normal;
+  cursor: pointer; }
+
+md-sidenav md-list a.md-button {
+  display: block; }
+
+.awc-side-nav-btn {
+  height: 24px;
+  width: 24px;
+  margin-right: 16px;
+  color: #fff;
+  background-color: transparent;
+  border: none; }
+
+.bold {
+  font-weight: 700; }
+
+.grey {
+  color: grey; }
