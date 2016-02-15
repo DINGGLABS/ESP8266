@@ -34,6 +34,7 @@
 #define LED_FEEDBACK_DURATION          3000     // in ms
 #define MAX_DURATION_SHORTCLICK        1000     // max. duration in ms a SHORTCLICK will be recognized
 #define MIN_DURATION_ULTRALONGCLICK    5000     // min. duration in ms an ULTRALONGCLICK will be recognized
+#define DELAY_PER_NTP_PACKAGE          1000     // in ms
 #define STD_DELAY                        20     // in ms
 
 /* LED defines */
@@ -41,7 +42,6 @@
 #define CLICK_LED_BRIGHTNESS_DIVISOR      4     // divisor of the LED brightness during a button click (to reduce current consumption)
 
 /* piezo defines */
-//#define MY_TIMER                         10     // in us
 #define PIEZO_FREQUENCY                3600     // in Hz
 #define STD_PIEZO_FREQUENCY_DIVISOR       2     // f_piezo = PIEZO_FREQUENCY / value) -> (the higher the value the lower the tone)
 #define HIGH_PIEZO_FREQUENCY_DIVISOR      1     // divisor for a high tone
@@ -49,7 +49,6 @@
 
 /* EEPROM defines */
 #define MAX_SIZE_EEPROM (MAX_SIZE_SSID + MAX_SIZE_SSID_PW)   // max EEPROM size to allocate
-
 /* EEPROM memory map (4... 4096 bytes)
  *  config:
  *  0     ssid                    // 0... MAX_SIZE_SSID - 1
@@ -102,27 +101,6 @@
 #define PATH_SETTINGS_HTML  ("/srv/settings.html")
 #define PATH_STYLES_CSS     ("/srv/css/styles.css")
 #define PATH_APP_JS         ("/srv/js/app.js")
-
-#define PATH_UPLOADS_PICTURES ("/uploads/pictures")
-
-/* File System (FS)
- *  /:
- *  /srv:
- *  /srv/index.html   
- *  /srv/awc-side-nav.html
- *  /srv/welcome.html
- *  /srv/sample.html
- *  /srv/settings.html
- *  
- *  /srv/css:
- *  /srv/css/styles.css
- *  
- *  /srv/js:
- *  /srv/js/app.js
- *  
- *  /uploads:
- *  /uploads/pictures:
- */
 
 /* Includes --------------------------------------------------- */
 #include <ESP8266WiFi.h>
@@ -194,7 +172,7 @@ unsigned long startMillis = millis();      // timing reference in ms
 unsigned long startMicros = micros();      // timing reference in us
 
 /* SSID data */
-const char DEFAULT_SSID[MAX_SIZE_SSID] = "ESP8266-AP (192.168.4.1)"; // do not use '_' and '@' (issue #661)
+const char DEFAULT_SSID[MAX_SIZE_SSID] = "ESP8266-AP (192.168.4.1)"; // do not use '_' or '@' (issue #661)
 const char DEFAULT_SSID_PW[MAX_SIZE_SSID_PW] = {0};
 
 char ssid[MAX_SIZE_SSID] = {0};
@@ -209,7 +187,6 @@ MDNSResponder mdns;
 /* FS */
 String pathSaved = PATH_SRV_FILES;
 String pathSavedFile = URI_INDEX_HTML;
-String pathSavedPicture = PATH_UPLOADS_PICTURES;
 
 /* LED variables */
 volatile unsigned int phaseInterruptCounterLED = 0;
@@ -357,7 +334,6 @@ void setupFS()
   Serial.println("");
 } 
 
-///* delete index.html */  //blup: for debugging
 void deleteIndexHTML()
 {
   Serial.println("delete index.html (debugging)");
@@ -481,10 +457,6 @@ void loop()
     case EVENT_SHORTCLICK:
     {
       Serial.println("EVENT_SHORTCLICK");
-
-      Serial.print("r = "); Serial.println(led.r);
-      Serial.print("g = "); Serial.println(led.g);
-      Serial.print("b = "); Serial.println(led.b);
     }
     break;
     case EVENT_LONGCLICK:
@@ -694,8 +666,8 @@ void setupPossibleClientRequests()
   server.on(URI_API_UPLOAD_FILE, HTTP_GET,  handleUploadFile_get);
   server.on(URI_API_UPLOAD_FILE, HTTP_POST, handleUploadFile_set);
 
-//  server.on(URI_API_UPLOAD_FILE, HTTP_PUT, handleUploadFile_set);
-//  server.on(URI_API_UPLOAD_FILE, HTTP_DELETE, handleUploadFile_set);
+//  server.on(URI_API_UPLOAD_FILE, HTTP_PUT, handleUploadFile_update);
+//  server.on(URI_API_UPLOAD_FILE, HTTP_DELETE, handleUploadFile_delete);
 
   /* static requests */
   server.on(URI_INDEX_HTML, HTTP_GET,  handleRoot);  // root
@@ -934,7 +906,7 @@ void handleTime_get()
   while(cb <= 0)
   {
     sendNTPpacket();  //blup sollte IPAddress übergen können
-    delay(1000);  //blup wait some time
+    delay(DELAY_PER_NTP_PACKAGE);  //blup wait some time
     cb = udp.parsePacket();
     //blup TODO: escape einbauen
   }
@@ -1261,60 +1233,6 @@ void handleFileUpload()
     }
   }
 /* ------------------------------------------------------------ */
-/* file to save into the FS ----------------------------------- */
-  else if (server.uri() == URI_API_UPLOAD_PICTURE)
-  {
-    /* handle start */
-    if(upload.status == UPLOAD_FILE_START)
-    {
-      /* prepare path */
-      pathSavedPicture = (String)PATH_UPLOADS_PICTURES + "/" + upload.filename;
-
-      Serial.setDebugOutput(true);
-      Serial.printf("start upload\n");
-      
-      WiFiUDP::stopAll();
-      
-      Serial.printf("Save file in: %s\n", pathSavedPicture.c_str());
-      
-//      uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
-//      Serial.printf("max sketch space = %d bytes\n", maxSketchSpace);
-//      
-//      /* check if max sketch space is enough */
-//      if(!Update.begin(maxSketchSpace)) // start with max available size
-//      {
-//        Update.printError(Serial);
-//      }
-    }
-  
-    /* handle upload */
-    else if(upload.status == UPLOAD_FILE_WRITE)
-    {
-      Serial.printf("handle upload\n");
-      
-      /* save data directly into the file */
-      File file = SPIFFS.open(pathSavedPicture, "w");
-      if (!file) {Serial.println("Failed to open the file for writing!"); while(1);}
-      for (unsigned long i = 0; i < upload.currentSize; i++)
-      {
-        file.write((char)upload.buf[i]);
-      }
-      file.close();
-    }
-  
-    /* handle end */
-    else if(upload.status == UPLOAD_FILE_END)
-    {
-      Serial.printf("end upload\n");
-
-      showFileContent(pathSavedPicture);
-
-      Serial.print("file size after writing = ");  Serial.println(getFileSize(pathSavedPicture));
-      
-      Serial.setDebugOutput(false);
-    }
-  }
-/* ------------------------------------------------------------ */
   else
   {
     sendToClientJsonInvalid(BAD_REQUEST);
@@ -1471,73 +1389,6 @@ void handleUploadFile_set() // will be called after handleFileUpload()
 
   pathSaved = PATH_SRV_FILES; //blup reset path after an upload
 }
-
-byte hexToByte(char h, char l)
-{
-  byte lNibble = 0;
-  byte hNibble = 0;
-
-  switch(l)
-  {
-    case '0': lNibble = 0;  break; case '1': lNibble = 1;  break;
-    case '2': lNibble = 2;  break; case '3': lNibble = 3;  break;
-    case '4': lNibble = 4;  break; case '5': lNibble = 5;  break;
-    case '6': lNibble = 6;  break; case '7': lNibble = 7;  break;
-    case '8': lNibble = 8;  break; case '9': lNibble = 9;  break;
-    case 'A': lNibble = 10; break; case 'B': lNibble = 11; break;
-    case 'C': lNibble = 12; break; case 'D': lNibble = 13; break;
-    case 'E': lNibble = 14; break; case 'F': lNibble = 15; break;
-  }
-  switch(h)
-  {
-    case '0': hNibble = 0;  break; case '1': hNibble = 1;  break;
-    case '2': hNibble = 2;  break; case '3': hNibble = 3;  break;
-    case '4': hNibble = 4;  break; case '5': hNibble = 5;  break;
-    case '6': hNibble = 6;  break; case '7': hNibble = 7;  break;
-    case '8': hNibble = 8;  break; case '9': hNibble = 9;  break;
-    case 'A': hNibble = 10; break; case 'B': hNibble = 11; break;
-    case 'C': hNibble = 12; break; case 'D': hNibble = 13; break;
-    case 'E': hNibble = 14; break; case 'F': hNibble = 15; break;
-  }
-
-  return (byte)((hNibble << 4) | lNibble);
-}
-
-///* static request handlers */
-//void handleRoot()
-//{
-//  staticServerResponse(PATH_INDEX_HTML, "text/html");
-//}
-//
-//void handleStylesCss()
-//{
-//  staticServerResponse(PATH_STYLES_CSS, "text/css");
-//}
-//
-//void handleAppJs()
-//{
-//  staticServerResponse(PATH_APP_JS, "text/javascript");
-//}
-//
-//void handleAwcSideHtml()
-//{
-//  staticServerResponse(PATH_AWC_SIDE_HTML, "text/html");
-//}
-//
-//void handleWelcomeHtml()
-//{
-//  staticServerResponse(PATH_WELCOME_HTML, "text/html");
-//}
-//
-//void handleSampleHtml()
-//{
-//  staticServerResponse(PATH_SAMPLE_HTML, "text/html");
-//}
-//
-//void handleSettingsHtml()
-//{
-//  staticServerResponse(PATH_SETTINGS_HTML, "text/html");
-//}
 
 void staticServerResponse(String path, String type)
 {
